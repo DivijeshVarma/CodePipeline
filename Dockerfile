@@ -1,12 +1,17 @@
 # Use Oracle Linux 9 as the base image
 FROM oraclelinux:9
 
-# Update the package list and install Python 3.12
+# Update the package list and install Python 3.12 and curl
 RUN dnf update -y && \
-    dnf install -y python3.12 curl && \
+    dnf install -y python3.12 curl gcc libffi-devel && \
     dnf clean all
 
-# Upgrade pip and setuptools for Python 3.12
+# Install pip for Python 3.12 (if it's missing)
+RUN curl https://bootstrap.pypa.io/get-pip.py -o get-pip.py && \
+    python3.12 get-pip.py && \
+    rm get-pip.py
+
+# Upgrade pip and setuptools
 RUN python3.12 -m pip install --upgrade pip setuptools
 
 # Set environment variable for Python 3.12
