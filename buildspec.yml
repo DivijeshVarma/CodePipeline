@@ -22,31 +22,37 @@ phases:
     commands:
       - echo "Fetching branch name from CodeBuild environment variables..."
       
-      # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
+      # Check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
           export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||')
           echo "Branch name (from CODEBUILD_WEBHOOK_HEAD_REF) is $BRANCH_NAME"
         else
-          # Fallback to CODEBUILD_SOURCE_VERSION (if the webhook ref is not set)
+          # Fallback to CODEBUILD_SOURCE_VERSION (if webhook ref is not set)
           export BRANCH_NAME=$(echo $CODEBUILD_SOURCE_VERSION | sed 's|refs/heads/||')
           echo "Branch name (from CODEBUILD_SOURCE_VERSION) is $BRANCH_NAME"
         fi
 
-      # If branch name is empty or HEAD, fallback to git
+      # If branch name is empty or HEAD, fallback to git (this might be relevant for local builds or scenarios)
       - |
         if [ -z "$BRANCH_NAME" ] || [ "$BRANCH_NAME" == "HEAD" ]; then
           echo "Branch name is empty or HEAD. Falling back to git..."
-          # Use git to extract the branch name from the local repo
           export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
           echo "Branch name (from git) is $BRANCH_NAME"
+        fi
+
+      # Ensure we only proceed if the branch is 'main' or 'development'
+      - |
+        if [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "development" ]; then
+          echo "ERROR: Branch name is neither 'main' nor 'development'. Exiting build."
+          exit 1
         fi
 
       # Docker Login
       - echo "Logging into Docker Hub..."
       - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-      - echo "Docker login successful" 
-      
+      - echo "Docker login successful"
+
       # Set Docker tag and deployment name
       - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v13"  # Replace invalid characters with underscore (_)
       - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"  # Ensure valid characters in deployment name
@@ -92,4 +98,3 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/pip/**/*'
-
