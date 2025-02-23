@@ -1,0 +1,95 @@
+version: 0.2
+
+env:
+  parameter-store:
+    DOCKER_USERNAME: "/streamlit/docker-credentials/username"
+    DOCKER_PASSWORD: "/streamlit/docker-credentials/password"
+    EC2_SSH_PRIVATE_KEY: "/streamlit/ec2/ec2_ssh_private_key"
+  variables:
+    EC2_INSTANCE_IP: "3.110.159.60"
+    DOCKER_HUB_REPO: "divijeshhub/pikube"
+
+phases:
+  install:
+    runtime-versions:
+      python: 3.12
+    commands:
+      - echo Installing dependencies...
+      - pip install --upgrade pip
+      - pip install -r requirements.txt
+
+  pre_build:
+    commands:
+      - echo "Fetching branch name from CodeBuild environment variables..."
+      
+      # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
+      - |
+        if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
+          export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||')
+          echo "Branch name (from CODEBUILD_WEBHOOK_HEAD_REF) is $BRANCH_NAME"
+        else
+          # Fallback to CODEBUILD_SOURCE_VERSION (if the webhook ref is not set)
+          export BRANCH_NAME=$(echo $CODEBUILD_SOURCE_VERSION | sed 's|refs/heads/||')
+          echo "Branch name (from CODEBUILD_SOURCE_VERSION) is $BRANCH_NAME"
+        fi
+
+      # If branch name is empty or HEAD, fallback to git
+      - |
+        if [ -z "$BRANCH_NAME" ] || [ "$BRANCH_NAME" == "HEAD" ]; then
+          echo "Branch name is empty or HEAD. Falling back to git..."
+          # Use git to extract the branch name from the local repo
+          export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+          echo "Branch name (from git) is $BRANCH_NAME"
+        fi
+
+      # Docker Login
+      - echo "Logging into Docker Hub..."
+      - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      - echo "Docker login successful" 
+      
+      # Set Docker tag and deployment name
+      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v13"  # Replace invalid characters with underscore (_)
+      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"  # Ensure valid characters in deployment name
+
+      - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
+      
+      - echo "Building Docker image with tag $DOCKER_TAG..."
+      - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
+
+      - echo "Running Trivy security scan..."
+      - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.rpm
+      - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG
+
+  post_build:
+    commands:
+      - echo "Pushing Docker image to DockerHub..."
+      - docker push $DOCKER_HUB_REPO:$DOCKER_TAG
+
+      - echo "Deploying Docker container to EC2..."
+      - export RANDOM_PORT=$(shuf -i 1024-65535 -n 1)  # Generate random port
+      - echo "Deploying to EC2 instance at $EC2_INSTANCE_IP on port $RANDOM_PORT"
+
+      # Save the SSH key to a temporary file for SSH access
+      - echo "$EC2_SSH_PRIVATE_KEY" > /tmp/id_rsa
+      - chmod 600 /tmp/id_rsa
+
+      # SSH into EC2 instance and deploy the Docker container using multiline script block
+      - |
+        ssh -o StrictHostKeyChecking=no -i /tmp/id_rsa ec2-user@$EC2_INSTANCE_IP <<EOF
+        docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker stop && \
+        docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker rm && \
+        docker pull $DOCKER_HUB_REPO:$DOCKER_TAG && \
+        docker run -d -p $RANDOM_PORT:8501 --name $DEPLOYMENT_NAME $DOCKER_HUB_REPO:$DOCKER_TAG
+        echo "Deployed Application at $EC2_INSTANCE_IP on port $RANDOM_PORT"
+        EOF
+
+artifacts:
+  files:
+    - Dockerfile
+    - requirements.txt
+    - ui.py
+
+cache:
+  paths:
+    - '/root/.cache/pip/**/*'
+
