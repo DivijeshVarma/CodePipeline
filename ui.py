@@ -3,7 +3,7 @@ import random
 import time
 from langchain_cohere import ChatCohere
 
-st.title("Divijesh Bot Development - v6")
+st.title("Divijesh Bot Development - v18")
 
 # Initialize chat history
 if "messages" not in st.session_state:
