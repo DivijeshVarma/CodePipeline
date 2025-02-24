@@ -1,4 +1,4 @@
-version: 0.2 
+version: 0.2
 
 env:
   parameter-store:
@@ -6,7 +6,7 @@ env:
     DOCKER_PASSWORD: "/streamlit/docker-credentials/password"
     EC2_SSH_PRIVATE_KEY: "/streamlit/ec2/ec2_ssh_private_key"
   variables:
-    EC2_INSTANCE_IP: "3.110.159.60"
+    EC2_INSTANCE_IP: "13.201.49.131"
     DOCKER_HUB_REPO: "divijeshhub/pikube"
 
 phases:
@@ -21,37 +21,34 @@ phases:
   pre_build:
     commands:
       - echo "Fetching branch name from CodeBuild environment variables..."
-
-      # Check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
+      
+      # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
           export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||')
           echo "Branch name (from CODEBUILD_WEBHOOK_HEAD_REF) is $BRANCH_NAME"
         else
-          # Fallback to CODEBUILD_SOURCE_VERSION (which is the commit ID or artifact reference)
-          # We need to extract the branch name from the commit hash or artifact reference
-          echo "CODEBUILD_SOURCE_VERSION is $CODEBUILD_SOURCE_VERSION"
-          
-          # This part assumes CODEBUILD_SOURCE_VERSION may contain something like a commit hash or S3 artifact URL
-          # Extract the branch name from the commit hash or code version if possible
-          export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)  # Fallback to Git if neither source is set
-          echo "Branch name (from git) is $BRANCH_NAME"
+          # Fallback to CODEBUILD_SOURCE_VERSION (if the webhook ref is not set)
+          export BRANCH_NAME=$(echo $CODEBUILD_SOURCE_VERSION | sed 's|refs/heads/||')
+          echo "Branch name (from CODEBUILD_SOURCE_VERSION) is $BRANCH_NAME"
         fi
 
-      # Ensure we only proceed if the branch is 'main' or 'development'
+      # If branch name is empty or HEAD, fallback to git
       - |
-        if [ "$BRANCH_NAME" != "main" ] && [ "$BRANCH_NAME" != "development" ]; then
-          echo "ERROR: Branch name is neither 'main' nor 'development'. Exiting build."
-          exit 1
+        if [ -z "$BRANCH_NAME" ] || [ "$BRANCH_NAME" == "HEAD" ]; then
+          echo "Branch name is empty or HEAD. Falling back to git..."
+          # Use git to extract the branch name from the local repo
+          export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+          echo "Branch name (from git) is $BRANCH_NAME"
         fi
 
       # Docker Login
       - echo "Logging into Docker Hub..."
       - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-      - echo "Docker login successful"
-
+      - echo "Docker login successful" 
+      
       # Set Docker tag and deployment name
-      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v13"  # Replace invalid characters with underscore (_)
+      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v1"  # Replace invalid characters with underscore (_)
       - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
@@ -95,3 +92,4 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/pip/**/*'
+
