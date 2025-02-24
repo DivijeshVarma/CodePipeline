@@ -6,7 +6,7 @@ env:
     DOCKER_PASSWORD: "/streamlit/docker-credentials/password"
     EC2_SSH_PRIVATE_KEY: "/streamlit/ec2/ec2_ssh_private_key"
   variables:
-    EC2_INSTANCE_IP: "13.201.49.131"
+    EC2_INSTANCE_IP: "13.233.51.158"
     DOCKER_HUB_REPO: "divijeshhub/pikube"
 
 phases:
@@ -21,6 +21,7 @@ phases:
   pre_build:
     commands:
       - echo "Fetching branch name from CodeBuild environment variables..."
+      
       # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
@@ -44,14 +45,14 @@ phases:
       # Docker Login
       - echo "Logging into Docker Hub..."
       - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-      - echo "Docker login successful"
-
+      - echo "Docker login successful" 
+      
       # Set Docker tag and deployment name
       - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v1"  # Replace invalid characters with underscore (_)
       - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
-
+      
       - echo "Building Docker image with tag $DOCKER_TAG..."
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
 
@@ -66,9 +67,8 @@ phases:
 
       - echo "Deploying Docker container to EC2..."
       - export RANDOM_PORT=$(shuf -i 1024-65535 -n 1)  # Generate random port
-      - echo "Deploying to EC2 instance at $EC2_INSTANCE_IP on port $RANDOM_PORT"
-
-      # Get instance ID from the EC2 public IP
+	  
+	  # Get instance ID from the EC2 public IP
       - echo "Fetching Instance ID for EC2 with public IP $EC2_INSTANCE_IP..."
       - export EC2_INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=ip-address,Values=$EC2_INSTANCE_IP" --query "Reservations[*].Instances[*].InstanceId" --output text)
 
@@ -94,7 +94,7 @@ phases:
         docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker rm && \
         docker pull $DOCKER_HUB_REPO:$DOCKER_TAG && \
         docker run -d -p $RANDOM_PORT:8501 --name $DEPLOYMENT_NAME $DOCKER_HUB_REPO:$DOCKER_TAG
-        echo "Deployed Application at $EC2_INSTANCE_IP:$RANDOM_PORT"
+        echo "Deployed Application at $EC2_INSTANCE_IP on port $RANDOM_PORT"
         EOF
 
 artifacts:
