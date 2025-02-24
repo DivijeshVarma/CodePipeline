@@ -67,7 +67,6 @@ phases:
 
       - echo "Deploying Docker container to EC2..."
       - export RANDOM_PORT=$(shuf -i 1024-65535 -n 1)  # Generate random port
-	  
       # Get instance ID from the EC2 public IP
       - echo "Fetching Instance ID for EC2 with public IP $EC2_INSTANCE_IP..."
       - export EC2_INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=ip-address,Values=$EC2_INSTANCE_IP" --query "Reservations[*].Instances[*].InstanceId" --output text)
@@ -76,7 +75,7 @@ phases:
       - export SECURITY_GROUP_ID=$(aws ec2 describe-instances --instance-ids $EC2_INSTANCE_ID --query 'Reservations[*].Instances[*].SecurityGroups[*].GroupId' --output text)
 
       - echo "Adding inbound rule for random port $RANDOM_PORT to security group $SECURITY_GROUP_ID..."
-      - aws ec2 authorize-security-group-ingress --region "ap-south-1" --group-id $SECURITY_GROUP_ID --protocol tcp --port $RANDOM_PORT --cidr 0.0.0.0/0
+      - aws ec2 authorize-security-group-ingress --region "ap-south-1" --group-id "$SECURITY_GROUP_ID" --protocol tcp --port "$RANDOM_PORT" --cidr 0.0.0.0/0
 
       # Save the SSH key to a temporary file for SSH access
       - echo "$EC2_SSH_PRIVATE_KEY" > /tmp/id_rsa
