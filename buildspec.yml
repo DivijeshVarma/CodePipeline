@@ -6,7 +6,7 @@ env:
     DOCKER_PASSWORD: "/streamlit/docker-credentials/password"
     EC2_SSH_PRIVATE_KEY: "/streamlit/ec2/ec2_ssh_private_key"
   variables:
-    EC2_INSTANCE_IP: "13.201.49.131"
+    EC2_INSTANCE_IP: "15.207.106.160"
     DOCKER_HUB_REPO: "divijeshhub/pikube"
 
 phases:
