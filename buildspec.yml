@@ -76,12 +76,8 @@ phases:
       - export SECURITY_GROUP_ID=$(aws ec2 describe-instances --instance-ids $EC2_INSTANCE_ID --query 'Reservations[*].Instances[*].SecurityGroups[*].GroupId' --output text)
 
       - echo "Adding inbound rule for random port $RANDOM_PORT to security group $SECURITY_GROUP_ID..."
-      - aws ec2 authorize-security-group-ingress \
-          --region "ap-south-1" \  # Replace with your region
-          --group-id $SECURITY_GROUP_ID \
-          --protocol tcp \
-          --port $RANDOM_PORT \
-          --cidr 0.0.0.0/0  # Allow traffic from anywhere (you can adjust this for tighter security)
+
+      - aws ec2 authorize-security-group-ingress --region "ap-south-1" --group-id $SECURITY_GROUP_ID --protocol tcp --port $RANDOM_PORT --cidr 0.0.0.0/0
 
       # Save the SSH key to a temporary file for SSH access
       - echo "$EC2_SSH_PRIVATE_KEY" > /tmp/id_rsa
