@@ -58,7 +58,7 @@ phases:
       - echo "Running Trivy security scan..."
       - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.rpm
       - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG
-      
+
   post_build:
     commands:
       - echo "Pushing Docker image to DockerHub..."
