@@ -4,9 +4,7 @@ env:
   parameter-store:
     DOCKER_USERNAME: "/streamlit/docker-credentials/username"
     DOCKER_PASSWORD: "/streamlit/docker-credentials/password"
-    EC2_SSH_PRIVATE_KEY: "/streamlit/ec2/ec2_ssh_private_key"
   variables:
-    EC2_INSTANCE_IP: "15.207.106.160"
     DOCKER_HUB_REPO: "divijeshhub/pikube"
 
 phases:
@@ -56,40 +54,10 @@ phases:
       - echo "Building Docker image with tag $DOCKER_TAG..."
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
 
-      - echo "Running Trivy security scan..."
-      - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.rpm
-      - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG
-
   post_build:
     commands:
       - echo "Pushing Docker image to DockerHub..."
       - docker push $DOCKER_HUB_REPO:$DOCKER_TAG
-
-      - echo "Deploying Docker container to EC2..."
-      - export RANDOM_PORT=$(shuf -i 1024-65535 -n 1)  # Generate random port
-      # Get instance ID from the EC2 public IP
-      - echo "Fetching Instance ID for EC2 with public IP $EC2_INSTANCE_IP..."
-      - export EC2_INSTANCE_ID=$(aws ec2 describe-instances --filters "Name=ip-address,Values=$EC2_INSTANCE_IP" --query "Reservations[*].Instances[*].InstanceId" --output text)
-
-      - echo "Retrieving Security Group ID for EC2 instance $EC2_INSTANCE_ID..."
-      - export SECURITY_GROUP_ID=$(aws ec2 describe-instances --instance-ids $EC2_INSTANCE_ID --query 'Reservations[*].Instances[*].SecurityGroups[*].GroupId' --output text)
-
-      - echo "Adding inbound rule for random port $RANDOM_PORT to security group $SECURITY_GROUP_ID..."
-      - aws ec2 authorize-security-group-ingress --region "ap-south-1" --group-id "$SECURITY_GROUP_ID" --protocol tcp --port "$RANDOM_PORT" --cidr 0.0.0.0/0
-
-      # Save the SSH key to a temporary file for SSH access
-      - echo "$EC2_SSH_PRIVATE_KEY" > /tmp/id_rsa
-      - chmod 600 /tmp/id_rsa
-
-      # SSH into EC2 instance and deploy the Docker container using multiline script block
-      - |
-        ssh -o StrictHostKeyChecking=no -i /tmp/id_rsa ec2-user@$EC2_INSTANCE_IP <<EOF
-        docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker stop && \
-        docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker rm && \
-        docker pull $DOCKER_HUB_REPO:$DOCKER_TAG && \
-        docker run -d -p $RANDOM_PORT:8501 --name $DEPLOYMENT_NAME $DOCKER_HUB_REPO:$DOCKER_TAG
-        echo "Deployed Application at $EC2_INSTANCE_IP:$RANDOM_PORT"
-        EOF
 
 artifacts:
   files:
