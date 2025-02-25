@@ -9,27 +9,27 @@ files:
 # Define the hooks for the deployment lifecycle
 hooks:
   BeforeInstall:
-    - location: /tmp/app/scripts/before_install.sh  # Ensure the full path is used
+    - location: scripts/before_install.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   AfterInstall:
-    - location: /tmp/app/scripts/after_install.sh  # Ensure the full path is used
+    - location: scripts/after_install.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   ApplicationStart:
-    - location: /tmp/app/scripts/application_start.sh  # Ensure the full path is used
+    - location: scripts/application_start.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   ApplicationStop:
-    - location: /tmp/app/scripts/application_stop.sh  # Ensure the full path is used
+    - location: scripts/application_stop.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   ValidateService:
-    - location: /tmp/app/scripts/validate_service.sh  # Ensure the full path is used
+    - location: scripts/validate_service.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
