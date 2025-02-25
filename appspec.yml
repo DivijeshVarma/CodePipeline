@@ -3,33 +3,33 @@ os: linux
 
 # Define the files to be transferred to the EC2 instance
 files:
-  - source: /                # This is the root of the project or build artifact directory
-    destination: /tmp/app     # Temporary location where the files will be placed
+  - source: /tmp/app  # Source from the CodeBuild artifact folder (i.e., your build output folder)
+    destination: /tmp/app  # Destination on the EC2 instance
 
 # Define the hooks for the deployment lifecycle
 hooks:
   BeforeInstall:
-    - location: scripts/before_install.sh
+    - location: /tmp/app/scripts/before_install.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   AfterInstall:
-    - location: scripts/after_install.sh
+    - location: /tmp/app/scripts/after_install.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   ApplicationStart:
-    - location: scripts/application_start.sh
+    - location: /tmp/app/scripts/application_start.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   ApplicationStop:
-    - location: scripts/application_stop.sh
+    - location: /tmp/app/scripts/application_stop.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
   ValidateService:
-    - location: scripts/validate_service.sh
+    - location: /tmp/app/scripts/validate_service.sh  # Ensure the full path is used
       timeout: 180
       runas: root
 
