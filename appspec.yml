@@ -3,7 +3,7 @@ os: linux
 
 # Define the files to be transferred to the EC2 instance
 files:
-  - source: /tmp/app  # Source from the CodeBuild artifact folder (i.e., your build output folder)
+  - source: /  # Source from the CodeBuild artifact folder (i.e., your build output folder)
     destination: /tmp/app  # Destination on the EC2 instance
 
 # Define the hooks for the deployment lifecycle
