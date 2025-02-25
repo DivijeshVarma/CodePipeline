@@ -65,6 +65,7 @@ artifacts:
     - Dockerfile
     - requirements.txt
     - ui.py
+    - scripts/**/*
 
 cache:
   paths:
