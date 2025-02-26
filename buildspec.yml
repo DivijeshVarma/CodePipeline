@@ -68,9 +68,14 @@ phases:
       - docker push $DOCKER_HUB_REPO:$DOCKER_TAG
 
       # Save DOCKER_TAG and DEPLOYMENT_NAME to a file for use during deployment
-      - echo "DOCKER_TAG=$DOCKER_TAG" > deployment_variables.txt
-      - echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> deployment_variables.txt
-      - echo "DOCKER_HUB_REPO=$DOCKER_HUB_REPO" >> deployment_variables.txt
+      - echo "Storing DOCKER_TAG and DEPLOYMENT_NAME in SSM Parameter Store..."
+      - aws ssm put-parameter --name "/myapp/DOCKER_TAG" --value "$DOCKER_TAG" --type "String" --overwrite
+      - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
+      - aws ssm put-parameter --name "/myapp/DOCKER_HUB_REPO" --value "$DOCKER_HUB_REPO" --type "String" --overwrite
+
+      #- echo "DOCKER_TAG=$DOCKER_TAG" > deployment_variables.txt
+      #- echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> deployment_variables.txt
+      #- echo "DOCKER_HUB_REPO=$DOCKER_HUB_REPO" >> deployment_variables.txt
 
 artifacts:
   files:
@@ -83,7 +88,6 @@ artifacts:
     - Dockerfile
     - requirements.txt
     - ui.py
-    - deployment_variables.txt  # Include the deployment_variables.txt file containing DOCKER_TAG and DEPLOYMENT_NAME
 
 cache:
   paths:

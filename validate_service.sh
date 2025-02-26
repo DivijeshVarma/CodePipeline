@@ -2,6 +2,8 @@
 
 echo "Validating the deployed service..."
 
+DEPLOYMENT_NAME=$(aws ssm get-parameter --name "/myapp/DEPLOYMENT_NAME" --query "Parameter.Value" --output text)
+
 source /tmp/deployment_variables.txt
 
 # Check if the container is running
