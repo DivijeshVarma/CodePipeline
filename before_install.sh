@@ -1,5 +1,7 @@
 #!/bin/bash
 
+source /tmp/deployment_variables.txt
+
 echo "Stopping old Docker container if running..."
 docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker stop
 docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker rm

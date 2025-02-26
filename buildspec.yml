@@ -67,17 +67,23 @@ phases:
       - echo "Pushing Docker image to DockerHub..."
       - docker push $DOCKER_HUB_REPO:$DOCKER_TAG
 
+      # Save DOCKER_TAG and DEPLOYMENT_NAME to a file for use during deployment
+      - echo "DOCKER_TAG=$DOCKER_TAG" > deployment_variables.txt
+      - echo "DEPLOYMENT_NAME=$DEPLOYMENT_NAME" >> deployment_variables.txt
+      - echo "DOCKER_HUB_REPO=$DOCKER_HUB_REPO" >> deployment_variables.txt
+
 artifacts:
   files:
     - appspec.yml
     - application_stop.sh
-    - after_install.sh 
+    - after_install.sh
     - before_install.sh
     - application_start.sh
     - validate_service.sh
     - Dockerfile
     - requirements.txt
     - ui.py
+    - deployment_variables.txt  # Include the deployment_variables.txt file containing DOCKER_TAG and DEPLOYMENT_NAME
 
 cache:
   paths:
