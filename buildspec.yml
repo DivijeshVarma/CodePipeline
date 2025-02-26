@@ -66,6 +66,11 @@ phases:
 artifacts:
   files:
     - appspec.yml
+    - application_stop.sh
+    - after_install.sh 
+    - before_install.sh
+    - application_start.sh
+    - validate_service.sh
     - Dockerfile
     - requirements.txt
     - ui.py
