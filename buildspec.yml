@@ -55,8 +55,12 @@ phases:
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
 
       # Set execute permissions on all scripts
-      #- echo "Setting execute permissions on all scripts in the 'scripts' folder..."
-      #- chmod +x scripts/*
+      - echo "Setting execute permissions on all scripts..."
+      - chmod +x before_install.sh
+      - chmod +x after_install.sh
+      - chmod +x application_start.sh
+      - chmod +x application_stop.sh
+      - chmod +x validate_service.sh
 
   post_build:
     commands:
