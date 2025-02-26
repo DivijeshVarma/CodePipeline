@@ -56,7 +56,7 @@ phases:
 
       # Set execute permissions on all scripts
       - echo "Setting execute permissions on all scripts in the 'scripts' folder..."
-      - chmod +x scripts/*
+      #- chmod +x scripts/*
 
   post_build:
     commands:
