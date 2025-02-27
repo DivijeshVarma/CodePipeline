@@ -12,7 +12,7 @@ phases:
     runtime-versions:
       python: 3.12
     commands:
-      - echo Installing dependencies...
+      - echo "Installing dependencies..."
       - pip install --upgrade pip
       - pip install -r requirements.txt
 
@@ -23,21 +23,11 @@ phases:
       - echo "CODEBUILD_WEBHOOK_HEAD_REF: $CODEBUILD_WEBHOOK_HEAD_REF"
 
       # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
-      - |
-        if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
-          export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||')
-          echo "Branch name (from CODEBUILD_WEBHOOK_HEAD_REF) is $BRANCH_NAME"
-        elif [ -n "$CODEBUILD_SOURCE_VERSION" ]; then
-          export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-          echo "Branch name (from git) is $BRANCH_NAME"
-        fi
+      - echo "Checking for CODEBUILD_WEBHOOK_HEAD_REF..."
+      - if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||'); echo "Branch name from webhook is $BRANCH_NAME"; elif [ -n "$CODEBUILD_SOURCE_VERSION" ]; then export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD); echo "Branch name from source version is $BRANCH_NAME"; fi
 
       # If branch name is empty or HEAD, fallback to git
-      - |
-        if [ -z "$BRANCH_NAME" ]; then
-          echo "Branch name is empty or HEAD. Falling back to git..."
-          export BRANCH_NAME="default-branch"
-        fi
+      - if [ -z "$BRANCH_NAME" ]; then echo "Branch name is empty or HEAD. Falling back to git..."; export BRANCH_NAME="default-branch"; fi
 
       # Docker Login
       - echo "Logging into Docker Hub..."
@@ -47,7 +37,6 @@ phases:
       # Set Docker tag and deployment name
       - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v1"
       - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"
-
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
 
       - echo "Building Docker image with tag $DOCKER_TAG..."
