@@ -72,7 +72,6 @@ phases:
       - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DOCKER_HUB_REPO" --value "$DOCKER_HUB_REPO" --type "String" --overwrite
 
-
 artifacts:
   files:
     - appspec.yml
@@ -88,3 +87,4 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/pip/**/*'
+
