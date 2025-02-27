@@ -46,8 +46,8 @@ phases:
       - echo "Docker login successful"
 
       # Set Docker tag and deployment name
-      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v1"  # Replace invalid characters with underscore (_)
-      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"  # Ensure valid characters in deployment name
+      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v2"  # Replace invalid characters with underscore (_)
+      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container2"  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
 
