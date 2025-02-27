@@ -22,17 +22,13 @@ phases:
       - echo "CODEBUILD_SOURCE_VERSION: $CODEBUILD_SOURCE_VERSION"
       - echo "CODEBUILD_WEBHOOK_HEAD_REF: $CODEBUILD_WEBHOOK_HEAD_REF"
 
-      # Try to extract the branch name from CODEBUILD_SOURCE_VERSION or use git
+      # Extract the branch name
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
-          # Extract the branch name from webhook ref (e.g., refs/heads/main)
           export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||')
           echo "Branch name (from CODEBUILD_WEBHOOK_HEAD_REF) is $BRANCH_NAME"
         elif [ -n "$CODEBUILD_SOURCE_VERSION" ]; then
-          # Extract the branch name based on the commit hash from the source
-          # This step assumes that CodePipeline is passing commit information and needs to be mapped back to a branch
-          echo "Source version is a commit hash. Trying to get the branch name from git..."
-          export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)  # Use git to resolve the branch
+          export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
           echo "Branch name (from git) is $BRANCH_NAME"
         fi
 
@@ -43,30 +39,18 @@ phases:
           export BRANCH_NAME="default-branch"
         fi
 
-      # Docker Tag and Deployment Name
-      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v2"  # Replace invalid characters with underscore (_)
-      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container2"  # Ensure valid characters in deployment name
-
+      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v1"
+      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"
       - echo "Docker Tag: $DOCKER_TAG"
       - echo "Deployment Name: $DEPLOYMENT_NAME"
 
       - echo "Building Docker image with tag $DOCKER_TAG..."
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
 
-      # Set execute permissions on all scripts
-      - echo "Setting execute permissions on all scripts..."
-      - chmod +x before_install.sh
-      - chmod +x after_install.sh
-      - chmod +x application_start.sh
-      - chmod +x application_stop.sh
-      - chmod +x validate_service.sh
-
   post_build:
     commands:
       - echo "Pushing Docker image to DockerHub..."
       - docker push $DOCKER_HUB_REPO:$DOCKER_TAG
-
-      # Save DOCKER_TAG and DEPLOYMENT_NAME to a file for use during deployment
       - echo "Storing DOCKER_TAG and DEPLOYMENT_NAME in SSM Parameter Store..."
       - aws ssm put-parameter --name "/myapp/DOCKER_TAG" --value "$DOCKER_TAG" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
