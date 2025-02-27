@@ -22,7 +22,7 @@ phases:
       - echo "CODEBUILD_SOURCE_VERSION: $CODEBUILD_SOURCE_VERSION"
       - echo "CODEBUILD_WEBHOOK_HEAD_REF: $CODEBUILD_WEBHOOK_HEAD_REF"
 
-      # Extract the branch name
+      # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
           export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||')
@@ -32,29 +32,46 @@ phases:
           echo "Branch name (from git) is $BRANCH_NAME"
         fi
 
-      # Fallback if branch name is still not set
+      # If branch name is empty or HEAD, fallback to git
       - |
         if [ -z "$BRANCH_NAME" ]; then
-          echo "Branch name could not be determined, falling back to default."
+          echo "Branch name is empty or HEAD. Falling back to git..."
           export BRANCH_NAME="default-branch"
         fi
 
+      # Docker Login
+      - echo "Logging into Docker Hub..."
+      - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
+      - echo "Docker login successful"
+
+      # Set Docker tag and deployment name
       - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v1"
       - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"
-      - echo "Docker Tag: $DOCKER_TAG"
-      - echo "Deployment Name: $DEPLOYMENT_NAME"
+
+      - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
 
       - echo "Building Docker image with tag $DOCKER_TAG..."
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
+
+      # Set execute permissions on all scripts
+      - echo "Setting execute permissions on all scripts..."
+      - chmod +x before_install.sh
+      - chmod +x after_install.sh
+      - chmod +x application_start.sh
+      - chmod +x application_stop.sh
+      - chmod +x validate_service.sh
 
   post_build:
     commands:
       - echo "Pushing Docker image to DockerHub..."
       - docker push $DOCKER_HUB_REPO:$DOCKER_TAG
+
+      # Save DOCKER_TAG and DEPLOYMENT_NAME to a file for use during deployment
       - echo "Storing DOCKER_TAG and DEPLOYMENT_NAME in SSM Parameter Store..."
       - aws ssm put-parameter --name "/myapp/DOCKER_TAG" --value "$DOCKER_TAG" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DOCKER_HUB_REPO" --value "$DOCKER_HUB_REPO" --type "String" --overwrite
+
 
 artifacts:
   files:
@@ -71,4 +88,3 @@ artifacts:
 cache:
   paths:
     - '/root/.cache/pip/**/*'
-
