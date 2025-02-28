@@ -19,7 +19,7 @@ phases:
   pre_build:
     commands:
       - echo "Setting Version Variable"
-      - export VERSION="v1"
+      - export VERSION="main-v1"
       - export CONTAINER="Stream"
 
       # Docker Login
@@ -35,6 +35,10 @@ phases:
 
       - echo "Building Docker image with tag $DOCKER_TAG..."
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
+
+      - echo "Running Trivy security scan..."
+      - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.rpm
+      - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG
 
       # Set execute permissions on all scripts
       - echo "Setting execute permissions on all scripts..."

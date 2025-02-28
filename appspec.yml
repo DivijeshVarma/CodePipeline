@@ -28,6 +28,3 @@ hooks:
       timeout: 300
       runas: root
 
-#files:
-#  - source: deployment_variables.txt  # Copy the deployment_variables.txt file to the EC2 instance
-#    destination: /tmp/deployment_variables.txt  # Destination path where it will be available on the EC2 instance
