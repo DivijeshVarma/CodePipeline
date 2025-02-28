@@ -30,11 +30,11 @@ phases:
 
     # Find the latest commit across all branches based on committer date
       - export LATEST_COMMIT_HASH=$(git for-each-ref --sort=-committerdate --format '%(objectname)' refs/heads/ | head -n 1)
-      - echo "Latest commit hash: $LATEST_COMMIT_HASH"
+      - echo "Latest commit hash $LATEST_COMMIT_HASH"
 
     # Find the branch associated with the latest commit
       - export BRANCH_NAME=$(git branch -r --contains $LATEST_COMMIT_HASH | head -n 1 | sed 's|origin/||')
-      - echo "Branch name from latest commit: $BRANCH_NAME"
+      - echo "Branch name from latest commit $BRANCH_NAME"
       # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
