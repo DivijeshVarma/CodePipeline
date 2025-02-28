@@ -22,7 +22,8 @@ phases:
       # Check if we're in a git repository and fetch the branch name
       - git clone https://github.com/DivijeshVarma/CodePipeline.git
       - cd CodePipeline
-      - export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)  # Get the current branch name
+      - echo "Fetching last commit's branch..."
+      - export BRANCH_NAME=$(git branch -r --contains $(git log -n 1 --pretty='%H') | grep -o 'origin/[^ ]*' | sed 's/origin\///')
 
       # Output the branch name found via git
       - echo "Branch name from git is $BRANCH_NAME"
