@@ -4,9 +4,7 @@ env:
   parameter-store:
     DOCKER_USERNAME: "/streamlit/docker-credentials/username"
     DOCKER_PASSWORD: "/streamlit/docker-credentials/password"
-    EC2_SSH_PRIVATE_KEY: "/streamlit/ec2/ec2_ssh_private_key"
   variables:
-    EC2_INSTANCE_IP: "13.201.49.131"
     DOCKER_HUB_REPO: "divijeshhub/pikube"
 
 phases:
@@ -21,7 +19,7 @@ phases:
   pre_build:
     commands:
       - echo "Fetching branch name from CodeBuild environment variables..."
-      
+
       # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
@@ -45,46 +43,45 @@ phases:
       # Docker Login
       - echo "Logging into Docker Hub..."
       - echo $DOCKER_PASSWORD | docker login -u $DOCKER_USERNAME --password-stdin
-      - echo "Docker login successful" 
-      
+      - echo "Docker login successful"
+
       # Set Docker tag and deployment name
       - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v1"  # Replace invalid characters with underscore (_)
-      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container"  # Ensure valid characters in deployment name
+      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container1"  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
-      
+
       - echo "Building Docker image with tag $DOCKER_TAG..."
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
 
-      - echo "Running Trivy security scan..."
-      - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.rpm
-      - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG
+      # Set execute permissions on all scripts
+      - echo "Setting execute permissions on all scripts..."
+      - chmod +x before_install.sh
+      - chmod +x after_install.sh
+      - chmod +x application_start.sh
+      - chmod +x application_stop.sh
+      - chmod +x validate_service.sh
 
   post_build:
     commands:
       - echo "Pushing Docker image to DockerHub..."
       - docker push $DOCKER_HUB_REPO:$DOCKER_TAG
 
-      - echo "Deploying Docker container to EC2..."
-      - export RANDOM_PORT=$(shuf -i 1024-65535 -n 1)  # Generate random port
-      - echo "Deploying to EC2 instance at $EC2_INSTANCE_IP on port $RANDOM_PORT"
+      # Save DOCKER_TAG and DEPLOYMENT_NAME to a file for use during deployment
+      - echo "Storing DOCKER_TAG and DEPLOYMENT_NAME in SSM Parameter Store..."
+      - aws ssm put-parameter --name "/myapp/DOCKER_TAG" --value "$DOCKER_TAG" --type "String" --overwrite
+      - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
+      - aws ssm put-parameter --name "/myapp/DOCKER_HUB_REPO" --value "$DOCKER_HUB_REPO" --type "String" --overwrite
 
-      # Save the SSH key to a temporary file for SSH access
-      - echo "$EC2_SSH_PRIVATE_KEY" > /tmp/id_rsa
-      - chmod 600 /tmp/id_rsa
-
-      # SSH into EC2 instance and deploy the Docker container using multiline script block
-      - |
-        ssh -o StrictHostKeyChecking=no -i /tmp/id_rsa ec2-user@$EC2_INSTANCE_IP <<EOF
-        docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker stop && \
-        docker ps -a --filter "name=$DEPLOYMENT_NAME" --format "{{.ID}}" | xargs -r docker rm && \
-        docker pull $DOCKER_HUB_REPO:$DOCKER_TAG && \
-        docker run -d -p $RANDOM_PORT:8501 --name $DEPLOYMENT_NAME $DOCKER_HUB_REPO:$DOCKER_TAG
-        echo "Deployed Application at $EC2_INSTANCE_IP on port $RANDOM_PORT"
-        EOF
 
 artifacts:
   files:
+    - appspec.yml
+    - application_stop.sh
+    - after_install.sh
+    - before_install.sh
+    - application_start.sh
+    - validate_service.sh
     - Dockerfile
     - requirements.txt
     - ui.py
