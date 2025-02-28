@@ -20,21 +20,21 @@ phases:
     commands:
       - echo "Fetching branch name from CodeBuild environment variables..."
       # Check if we're in a git repository and fetch the branch name
-      - git clone --single-branch --depth 1 https://github.com/DivijeshVarma/CodePipeline.git
-      - cd CodePipeline
-      # Get the last commit hash
-      - export COMMIT_HASH=$(git log -n 1 --pretty='%H')
-      - echo "Last commit hash $COMMIT_HASH"
-      - export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
+      - echo "Cloning the repository..."
+      - git clone https://github.com/DivijeshVarma/CodePipeline.git
+      - cd CodePipeline  # Change directory to the cloned repository
 
-      - echo "Branch name from git is $BRANCH_NAME"
-    # Get the branch associated with the last commit
-      - echo "Fetching last commit's branch..."
-      - export BRANCH_NAME=$(git branch -r --contains $COMMIT_HASH | grep -o 'origin/[^ ]*' | sed 's/origin\///' | head -n 1)
+    # Fetch all branches and updates from the remote repository
+      - echo "Fetching all branches and commits..."
+      - git fetch --all
 
-      # Output the branch name found via git
-      - echo "Branch name from git is $BRANCH_NAME"
+    # Find the latest commit across all branches based on committer date
+      - export LATEST_COMMIT_HASH=$(git for-each-ref --sort=-committerdate --format '%(objectname)' refs/heads/ | head -n 1)
+      - echo "Latest commit hash: $LATEST_COMMIT_HASH"
 
+    # Find the branch associated with the latest commit
+      - export BRANCH_NAME=$(git branch -r --contains $LATEST_COMMIT_HASH | head -n 1 | sed 's|origin/||')
+      - echo "Branch name from latest commit: $BRANCH_NAME"
       # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
