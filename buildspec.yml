@@ -24,17 +24,20 @@ phases:
       - git clone https://github.com/DivijeshVarma/CodePipeline.git
       - cd CodePipeline  # Change directory to the cloned repository
 
-    # Fetch all branches and updates from the remote repository
-      - echo "Fetching all branches and commits..."
-      - git fetch --all
+      - echo "Fetching all commits and their branches..."
+      - git ls-remote https://github.com/DivijeshVarma/CodePipeline.git > all_commits.txt
 
-    # Find the latest commit across all branches based on committer date
-      - export LATEST_COMMIT_HASH=$(git for-each-ref --sort=-committerdate --format '%(objectname)' refs/heads/ | head -n 1)
+      # Find the latest commit by sorting the commits based on commit hashes
+      - echo "Finding the latest commit..."
+      - export LATEST_COMMIT_HASH=$(awk '{print $1}' all_commits.txt | sort | tail -n 1)
       - echo "Latest commit hash $LATEST_COMMIT_HASH"
 
+      # Get the branch that contains the latest commit
+      - export BRANCH_NAME=$(grep $LATEST_COMMIT_HASH all_commits.txt | awk '{print $2}' | sed 's|refs/heads/||')
+      - echo "The branch associated with the latest commit is $BRANCH_NAME"      
+
+
     # Find the branch associated with the latest commit
-      - export BRANCH_NAME=$(git branch -r --contains $LATEST_COMMIT_HASH | head -n 1 | sed 's|origin/||')
-      - echo "Branch name from latest commit $BRANCH_NAME"
       # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
       - |
         if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
