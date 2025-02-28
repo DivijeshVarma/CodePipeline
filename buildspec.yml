@@ -18,16 +18,9 @@ phases:
 
   pre_build:
     commands:
-      - echo "Fetching branch name from CodeBuild environment variables..."
-
-      # Fetch the latest commit hash from the GitHub API
-      - echo "Fetching the latest commit from GitHub API..."
-      - export LATEST_COMMIT_HASH=$(curl -s https://api.github.com/repos/DivijeshVarma/CodePipeline/commits | jq -r '.[0].sha')
-      - echo "Latest commit hash $LATEST_COMMIT_HASH"
-
-      # Fetch the branches containing the latest commit (this approach assumes you know how to find the branches via the GitHub API)
-      - export BRANCH_NAME=$(curl -s https://api.github.com/repos/DivijeshVarma/CodePipeline/branches | jq -r '.[] | select(.commit.sha == "'$LATEST_COMMIT_HASH'") | .name')
-      - echo "Branch name from latest commit $BRANCH_NAME"
+      - echo "Setting Version Variable"
+      - export VERSION="v1"
+      - export CONTAINER="Stream"
 
       # Docker Login
       - echo "Logging into Docker Hub..."
@@ -35,8 +28,8 @@ phases:
       - echo "Docker login successful"
 
       # Set Docker tag and deployment name
-      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v01"  # Replace invalid characters with underscore (_)
-      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container1"  # Ensure valid characters in deployment name
+      - export DOCKER_TAG="${VERSION}"  # Replace invalid characters with underscore (_)
+      - export DEPLOYMENT_NAME="${CONTAINER}-${VERSION}"  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
 
@@ -61,7 +54,6 @@ phases:
       - aws ssm put-parameter --name "/myapp/DOCKER_TAG" --value "$DOCKER_TAG" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DOCKER_HUB_REPO" --value "$DOCKER_HUB_REPO" --type "String" --overwrite
-
 
 artifacts:
   files:
