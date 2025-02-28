@@ -18,27 +18,9 @@ phases:
 
   pre_build:
     commands:
-      - echo "Fetching branch name from CodeBuild environment variables..."
-
-      # First, check if CODEBUILD_WEBHOOK_HEAD_REF exists (for webhook-triggered builds)
-      - |
-        if [ -n "$CODEBUILD_WEBHOOK_HEAD_REF" ]; then
-          export BRANCH_NAME=$(echo $CODEBUILD_WEBHOOK_HEAD_REF | sed 's|refs/heads/||')
-          echo "Branch name (from CODEBUILD_WEBHOOK_HEAD_REF) is $BRANCH_NAME"
-        else
-          # Fallback to CODEBUILD_SOURCE_VERSION (if the webhook ref is not set)
-          export BRANCH_NAME=$(echo $CODEBUILD_SOURCE_VERSION | sed 's|refs/heads/||')
-          echo "Branch name (from CODEBUILD_SOURCE_VERSION) is $BRANCH_NAME"
-        fi
-
-      # If branch name is empty or HEAD, fallback to git
-      - |
-        if [ -z "$BRANCH_NAME" ] || [ "$BRANCH_NAME" == "HEAD" ]; then
-          echo "Branch name is empty or HEAD. Falling back to git..."
-          # Use git to extract the branch name from the local repo
-          export BRANCH_NAME=$(git rev-parse --abbrev-ref HEAD)
-          echo "Branch name (from git) is $BRANCH_NAME"
-        fi
+      - echo "Setting Version Variable"
+      - export VERSION="v1"
+      - export CONTAINER="Stream"
 
       # Docker Login
       - echo "Logging into Docker Hub..."
@@ -46,8 +28,8 @@ phases:
       - echo "Docker login successful"
 
       # Set Docker tag and deployment name
-      - export DOCKER_TAG="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-v3"  # Replace invalid characters with underscore (_)
-      - export DEPLOYMENT_NAME="${BRANCH_NAME//[^a-zA-Z0-9_-]/_}-container3"  # Ensure valid characters in deployment name
+      - export DOCKER_TAG="${VERSION}"  # Replace invalid characters with underscore (_)
+      - export DEPLOYMENT_NAME="${CONTAINER}-${VERSION}"  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
 
@@ -72,7 +54,6 @@ phases:
       - aws ssm put-parameter --name "/myapp/DOCKER_TAG" --value "$DOCKER_TAG" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DOCKER_HUB_REPO" --value "$DOCKER_HUB_REPO" --type "String" --overwrite
-
 
 artifacts:
   files:
