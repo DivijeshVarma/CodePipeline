@@ -20,7 +20,7 @@ phases:
     commands:
       - echo "Fetching branch name from CodeBuild environment variables..."
       # Check if we're in a git repository and fetch the branch name
-      - git clone https://github.com/DivijeshVarma/CodePipeline.git
+      - git clone --single-branch --depth 1 https://github.com/DivijeshVarma/CodePipeline.git
       - cd CodePipeline
       # Get the last commit hash
       - export COMMIT_HASH=$(git log -n 1 --pretty='%H')
