@@ -37,7 +37,7 @@ phases:
       # Run Trivy Scan
       - echo "Running Trivy security scan..."
       - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.rpm
-      - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG --format json > trivy_scan_results.json
+      - trivy image --format json $DOCKER_HUB_REPO:$DOCKER_TAG > trivy_scan_results.json
 
       - |
         CRITICAL_VULNERABILITIES=$(jq '.[] | select(.Severity=="CRITICAL")' trivy_scan_results.json)
