@@ -29,7 +29,7 @@ phases:
 
       # Set Docker tag and deployment name
       - export DOCKER_TAG="${VERSION}"  # Replace invalid characters with underscore (_)
-      - export DEPLOYMENT_NAME="${CONTAINER}-${VERSION}"  # Ensure valid characters in deployment name
+      - export DEPLOYMENT_NAME="${CONTAINER}-${VERSION}-$(date +'%Y%m%d%H%M%S')"  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
 
