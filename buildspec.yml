@@ -19,8 +19,7 @@ phases:
   pre_build:
     commands:
       - echo "Setting Version Variable"
-      - export VERSION="development-v4"
-      - export CONTAINER="Stream1"
+      - export VERSION="development-v5"
 
       # Docker Login
       - echo "Logging into Docker Hub..."
@@ -28,24 +27,31 @@ phases:
       - echo "Docker login successful"
 
       # Set Docker tag and deployment name
-      - export DOCKER_TAG="${VERSION}"  # Replace invalid characters with underscore (_)
+      - export DOCKER_TAG="${VERSION}" 
 
-      - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
+      - echo "Docker Tag $DOCKER_TAG ." 
 
       - echo "Building Docker image with tag $DOCKER_TAG..."
       - docker build -t $DOCKER_HUB_REPO:$DOCKER_TAG .
-
+      
+      # Run Trivy Scan
       - echo "Running Trivy security scan..."
       - rpm -ivh https://github.com/aquasecurity/trivy/releases/download/v0.18.3/trivy_0.18.3_Linux-64bit.rpm
-      - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG
+      - trivy image $DOCKER_HUB_REPO:$DOCKER_TAG --format json > trivy_scan_results.json
+
+      - |
+        CRITICAL_VULNERABILITIES=$(jq '.[] | select(.Severity=="CRITICAL")' trivy_scan_results.json)
+        if [ -n "$CRITICAL_VULNERABILITIES" ]; then
+          echo "Critical vulnerabilities found! Stopping pipeline."
+          exit 1
+        else
+          echo "No critical vulnerabilities found."
+        fi
 
       # Set execute permissions on all scripts
       - echo "Setting execute permissions on all scripts..."
-      - chmod +x before_install.sh
       - chmod +x after_install.sh
       - chmod +x application_start.sh
-      - chmod +x application_stop.sh
-      - chmod +x validate_service.sh
 
   post_build:
     commands:
@@ -60,11 +66,8 @@ phases:
 artifacts:
   files:
     - appspec.yml
-    - application_stop.sh
     - after_install.sh
-    - before_install.sh
     - application_start.sh
-    - validate_service.sh
     - Dockerfile
     - requirements.txt
     - ui.py
