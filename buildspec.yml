@@ -29,7 +29,6 @@ phases:
 
       # Set Docker tag and deployment name
       - export DOCKER_TAG="${VERSION}"  # Replace invalid characters with underscore (_)
-      - export DEPLOYMENT_NAME="${CONTAINER}-${VERSION}-$(date +'%Y%m%d%H%M%S') "  # Ensure valid characters in deployment name
 
       - echo "Docker Tag $DOCKER_TAG, Deployment Name $DEPLOYMENT_NAME"
 
@@ -56,7 +55,6 @@ phases:
       # Save DOCKER_TAG and DEPLOYMENT_NAME to a file for use during deployment
       - echo "Storing DOCKER_TAG and DEPLOYMENT_NAME in SSM Parameter Store..."
       - aws ssm put-parameter --name "/myapp/DOCKER_TAG" --value "$DOCKER_TAG" --type "String" --overwrite
-      - aws ssm put-parameter --name "/myapp/DEPLOYMENT_NAME" --value "$DEPLOYMENT_NAME" --type "String" --overwrite
       - aws ssm put-parameter --name "/myapp/DOCKER_HUB_REPO" --value "$DOCKER_HUB_REPO" --type "String" --overwrite
 
 artifacts:

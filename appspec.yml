@@ -3,10 +3,10 @@ os: linux
 
 # Define the hooks for the deployment lifecycle
 hooks:
-  BeforeInstall:
-    - location: before_install.sh  
-      timeout: 300
-      runas: root
+#  BeforeInstall:
+ #   - location: before_install.sh  
+  #    timeout: 300
+  #    runas: root
 
   AfterInstall:
     - location: after_install.sh  
@@ -18,13 +18,13 @@ hooks:
       timeout: 300
       runas: root
 
-  ApplicationStop:
-    - location: application_stop.sh 
-      timeout: 300
-      runas: root
+  #ApplicationStop:
+   # - location: application_stop.sh 
+    #  timeout: 300
+     # runas: root
 
-  ValidateService:
-    - location: validate_service.sh 
-      timeout: 300
-      runas: root
+  #ValidateService:
+   # - location: validate_service.sh 
+    #  timeout: 300
+     # runas: root
 

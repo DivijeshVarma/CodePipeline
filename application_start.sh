@@ -4,8 +4,9 @@ echo "Starting the new Docker container..."
 
 # Fetch DOCKER_TAG and DEPLOYMENT_NAME from SSM Parameter Store
 DOCKER_TAG=$(aws ssm get-parameter --name "/myapp/DOCKER_TAG" --query "Parameter.Value" --output text)
-DEPLOYMENT_NAME=$(aws ssm get-parameter --name "/myapp/DEPLOYMENT_NAME" --query "Parameter.Value" --output text)
 DOCKER_HUB_REPO=$(aws ssm get-parameter --name "/myapp/DOCKER_HUB_REPO" --query "Parameter.Value" --output text)
+
+DEPLOYMENT_NAME="${DOCKER_TAG}-$(date +%Y%m%d%H%M%S)"
 
 RANDOM_PORT=$(shuf -i 1024-65535 -n 1)
 
