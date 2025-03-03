@@ -19,7 +19,7 @@ phases:
   pre_build:
     commands:
       - echo "Setting Version Variable"
-      - export VERSION="development-v2"
+      - export VERSION="development-v3"
       - export CONTAINER="Stream"
 
       # Docker Login
