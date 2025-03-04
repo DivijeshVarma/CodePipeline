@@ -19,7 +19,7 @@ phases:
   pre_build:
     commands:
       - echo "Setting Version Variable"
-      - export VERSION="development-v5"
+      - export VERSION="development-v1"
 
       # Docker Login
       - echo "Logging into Docker Hub..."
